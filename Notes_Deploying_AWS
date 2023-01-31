@@ -1,0 +1,458 @@
+
+                                           DEPLOYING OUR PROJECT TO AMAZON EC2 
+
+
+VIDEO 47 : 
+
+
+Deploying the Exam Portal project on AWS EC2 : 
+
+Various cloud platforms like Azure , Digital Ocean , Google cloud 
+
+Using AWS cloud Ec2 instance. 
+
+Steps invloved . 
+
+1. Exam portal is build with java , mysql , nodejs(angular).
+2. Create the account on AWS then sign in (24 hr) .
+3. Then crate the new EC2 instance from Services. (Img 2 )
+4. Choose the instance of Ubuntu Server 20.04 Free Tier eligible. Then launch it.
+5*. Now we need to create the key pair .This key is VERY imporatant to login and perform operation.
+6.Rename it ,Now wait till the current instance come in running state.
+7.Now click on instace id and connect the instance. Now teminal will be opened in browser.
+8.Try sudu su , clear , apt update commnads.
+9. We need to install the java and mysql here. SO just type java and it will give suggestion to download java-14 - same as springboot project.Copy till apt install openjdk-14-jre-headeless and paste there .  Type java -version.
+10.But jshell not working , Also install the jdk, which give tools to compile java .  so install the jdk 14 from suggestion by copying . Now check jshell , and /exit after checking.
+
+11.Now to install the MySql , first do apt update , then run the command "apt install mysql-server"
+And check it "mysql" , "show databases"
+.
+12. Now creating the new user so that we can use it from anywhere(%) and aslo from the MySql workbench of localcomputer.durgesh-password. 
+
+create user 'examuser'@'%' identified by 'durgesh'
+
+13.Now we need to give permissions . 
+
+grant all privileges on *.* to 'examuser'@'%' with grant option; 
+
+14. Now do  "flush privileges" and "exit"
+15. Now we can login with created user and give password "durgesh".
+
+mysql -u examuser -p
+
+16. Now we can use the mysql of Ubuntu from local Workbench . Need to do some setting in edit inbound rules.
+
+We need to go configuration:
+Go to instances -> select id of instance -> Go to security tag -> click security Groups id -> click Edit inbound rules and add a rule .-> give port 3306 and Custom TCP type 0.0.0/0 means from anywhere access is allowed.Then save.
+
+17.Now open workbecnch on local comp and create new connection. 
+
+--> Fill name as learn-aws
+
+Before This go to AWS sevice and allocate IP . Click on Elastic IP addresses.
+And rename it to "learn-aws"
+Now Actions -> associate the IP Address  ->choose instance and ip address and then associate it.
+
+Now go to instance and Copy the public IPv4 "5.129.240.240" -to be used to connect with workbench.
+Refer screenshot-10
+
+-->enter the SSH Hostname as copied ip address with :22
+--> SSH username: ubuntu
+--> SSH Password : is password of AWS account.
+-->SSH file : select the key pair downloaded at time of account creation.
+--> Now at mySQL , usename=examuser , password=root (password of MySQL)
+-->now test connection.
+
+NOW we have successfully connected the Local workbench with Online AWS- ubuntu MySQL
+
+.........................
+Check by reconnecting 
+- sudu su
+-mysql -u examuser -p   and enter password 'durgesh'
+-Now show databases and cross verify each other.
+-creat the database named "exam"
+
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+======================================================
+
+
+
+
+VIDEO : 48
+
+Deploying the springboot on EC2 instance "learn-aws"
+
+1.Need to upload the jar file , before that we need to connect the instance with terminal.
+If we direcly click on instance and connect button its terminal is opned on browser but we need to type every thing manually there.
+(DONE IN LATER VIDEOS )
+/*So to save this we are connecting instance with the Git Bash (download git from net).*/
+
+2.Start with connecting with browser Connect button. 
+Then sudu su
+
+-Now we go back to intellij and correct the database port to 3306 under application.properties file,also change username, password .
+
+3.Also we are make a new api(open to all users ) to test the working on online system , ie our backend system is responding or not.
+
+SO create a method test() , which is unauthenticated used to test.
+Url will be "/user/test"
+
+@GetMapping("/test")
+public String test("/test")
+{ return "welcome to backend api of Examportal";}
+
+-Also we need to give access to url in MySecurityConfig file. ie 
+.antMathers("/generate-token","/user/","/user/test").permitAll()
+
+
+4. Now crate the jar file of project from 
+ Maven tag -> LifeCycle -> install 
+
+ This jar file will be in target folder (open in file explorer) "examserver (0.0.1-SNAPSHOT.jar)"
+ Rename it as "examportal.jar"
+
+5. Now go back to EC2 teminal , 
+ sudu su , apt update 
+
+ If already inside /home/ubuntu#
+ -Then make folder : 
+  mkdir project  
+ -and give all permissions 
+ chmod 777 project/
+
+6. Now to upload jar.file we need 3 party software "FileZilla" download it from google.
+
+7.Now launch Filezilla then file ->site manager -> new site ->name it and fill the details (screenshot img 12)
+
+Use Protol :  SFTP , 
+    Host : IP address of EC2 instance. 
+    Port : 22   (port of SSH is 22 )
+    Logon: KeyFile
+    User : Ubuntu
+    Select the key pair file downloaded at time of aws account creation.
+    Now connect to the learn-aws again from start.
+
+Go to project folder in ubuntu server (right side)
+
+8. Now we need to drag - drop the jar file into the project folder of Ubuntu.
+
+Now we can verify it from the online-terminal, ls command -> cd project -> ls .
+
+9.Now we can run the jar file 
+"java -jar examportal.jar"  
+
+Projec is running on port 8080
+
+_______________________________________
+
+10. Now we need to opne the port 8080 of EC2 instance Dashboard ->instances -> inst ID -> Security ->Security Gruops ->Edit inbound rules ->add rule to port 8080 from anywhere(0.0.0) and save.
+
+11. Now check directly on google : IP Address : 8080
+
+=> 18.119.154.231:8080/user/test    - to verify springboot is responding.
+
+12. Now problem is "teminal is tempory" so need to run it as backend service. Also we can attach the domain name to ip:
+
+Also we can verify from workbench tables are created.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+=======================================================================
+
+VIDEO 49 :
+
+Now creating the service in Ubuntu , to make the springboot application run in background of EC2 instance.
+
+1.Need to do change in pom.xml , need to add <configuration> tag in build/plugins 
+
+<configuration>
+<executable> true
+</executable>
+</configuration>
+
+2.Now again generate the .rar file using the maven -> lifecycle ->install
+Now rename the generated file as examportal.rar
+3.Now go to the online terminal of EC2 instance , and login using super user  
+
+sudo su
+clear
+
+Connect back the filezilla and drag and drop the new examserver file in project folder and confirm the overwrite previous file.
+
+3.Now write following script in notepad.
+
+_________________________________
+
+[Unit]
+Description=A Spring Boot Application for examportal 
+After=syslog.target
+
+[Service]
+User=ubuntu
+ExecStart=/home/ubuntu/project/examportal.jar
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target
+
+
+____________________________________
+
+4.Now we need to save this file in project subfoldder
+Path: /etc/sustemd/system
+name: examportal.service
+
+5.Go to specified path in teminal project/etc/systemd/system    and create file.
+vim examportal.service
+
+Now we need to paste the code of Note pad in this file. but copy/paste wont work here.
+
+6.Now go to Online EC2 instance and connect option , and copy the link to connect with the SSH Client .
+
+NOW GO TO THE SAME FOLDER WHERE WE DOWNLOADED THE KEY PAIR(learn-aws.pem) at the time of making AWS account (downloads)
+And OPEN the git-bash here.(Need to download the git software)
+
+7.Now copy the SSH connection link in gitbase teminal.So your Online EC2 teminal will be opened here in gitbash.
+Login with super user.
+
+sudu su
+clear
+
+8.No go to same folder from home/ubuntu#
+
+cd etc/systemd/system 
+
+then :  vim examportal.service and paste the nodepad text here (if error use i to go to insert mode then paste)
+
+9.Now  quit and save using=   :wq! 
+10. Now need to enalble this service , so it automatically starts.
+
+Other commands
+-Enable : systemctl enable examportal
+-Start : systemctl start examportal
+-Status : systemctl status examportal
+-Stop : systemctl stop examportal
+-Restart : systemctl restart examportal
+
+11: Now enable and start the service using the above commands and then check the status of it.
+
+12.if error comes ,we need to give permission to new jar file using
+chmod 777 /home/ubuntu/project/examportal.jar
+
+13.Now again start it and see the status.
+14.Now we can exit the terminal , and service will keep on running .ie backend springboot is active.We need to explicitly stop the service using above command.
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+=========================================================
+
+
+VIDEO : 50 
+
+ Buying the domain name , to point the IP address in the url.
+
+ 1.Sign up and sign in on GoDaddy.com and search the domain name according your choice and buy it (.com => 900 rs / year ).
+ 2.Now go to MyProducts section on Godaddy and open the domain name -> Manage DNS .
+
+ 3. Copy the IP address from the EC2 instance of AWS. 
+ 4. Now change the value of @ with IP address u have copied under the Points to option and Save.(Wait 1 hr or try in Incognito mode of Chrome)
+ -Now check it : www.codewithdurgesh:8080/user/test
+
+ 5.By default port is 80 , otherwise need to mention expicity as in above case.
+ Basically we deploy the frontend part on the port 80 ,  so it can domain name alone can point to the project.
+
+ SO TILL NOW OUT BACKEND service is running perfectly on 8080 port.
+
+
+ 6.Now go to VSCode and open the helper.ts file of examfront project and need to change the address of backend in angular project as it need to point the backend of springboot project deployed on EC2 instance with given domain name and port.
+
+ //Locally we have : let baseUrl='http://localhost:8080'
+
+ In deploying :
+ let baseUrl='http://codewithdurgesh.com:8080'
+
+export default baseUrl;
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+=============================================================
+
+
+VIDEO : 51 :
+
+DEPLOYING frontend / Angular  on EC2 instance.
+
+1. We are going to use Nginx server 
+2. Create the compressed folder "dist" of angular project using terminal command.
+
+ng build --prod
+
+3.Need to install the nginx server in online EC2 instance GitBash terminal. 
+
+If disconnected , Reconnent it using same SSH link of EC2 instance copying it ->Then opeing the Git Bash in folder where pair key is kept. -> Login using the sudu su ->clear -> apt update
+
+4.Install :   apt install nginx
+
+5. Now need to enable & start - this server in backend using the command same as we have used for examservice and then check the staus of server.
+
+Enable - systemctl enable nginx
+Start - systemctl start nginx
+Stop- systemctl stop nginx
+Restart - systemctl restart nginx
+Status - systemctl status nginx
+
+6.Now go to EC2 instance of AWS and open the 80 port no , so it can be accessed from anywhere.
+Go to EC2 Instance -> Security -> Security group -> Edit inbound rule -> add new rule -> Type :  Custom TCP and 0.0.0.0/0 (open form anywhere) , port 80 : and save.
+
+7. NOW we need to make a file to tell which directory should server serve on port 80 .
+
+8. If we see the angular the dist folder will be created which has the index.html file inside the examfront.
+
+9.Just Drag and drop the "examfront" folder of dist folder using the FileZilla. (If filezilla was disconnect connect it from the File -> connect to learn-aws)
+
+10. Now in GitBash : go to given path and create file with given name and copy the text given below.
+
+path : /etc/nginx/conf.d/ 
+name : codewithdurgesh.com.conf
+
+________________________________
+
+server {
+   listen 0.0.0.0:80;
+   root /home/ubuntu/project/examfront;
+   server_name codewithdurgesh.com;
+   location / {
+   try_files $uri $uri/ /index.html;
+   }
+}
+
+________________________________
+
+
+11. Now create the file inside /etc/nginx/conf.d# using :
+
+vim codewithdurgesh.com.conf
+
+--> paste the content and if INSERT is visible at bottom left - press the ESC key. and :wq!
+
+
+(Make sure http )
+
+12. Now restart the nginx server using command and check the status (Wait 1 hr and stop-start try ).
+We can see that exam portal is live on port:80 or directly on domain name.  
+http:codewithdurgesh.com
+
+NOW WHOLE PROJECT IS WORKING FINE.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+================================================================
+
+
+VIDEO : 52 
+
+Attaching SSL / making https
+
+1.SSL (Secure Socket Layer) secures that the data is ecrypted and then data is shared to server.
+2.Connect the EC2 Instance using the SSH link on Git Bash (in folder of key pair). Then login the super user (sudu su)
+3.Now check backend service  and nginx server is running or not - ie http:codewithdurgesh.com is running or not.
+
+systemctl status examportal
+systemctl status nginx
+
+4.To get the SSL certificate (make https) we are using CloudFlare (Third party) Login and signin in it.
+
+5.After creating account :  Give the site name :
+codewithdurgesh.com -> select free plan -> continue and follow the instuctions to removee the nameservers from Godaddy and paste new nameservers there .
+
+6.Now login back to Godaddy.com -> My Products ->Manage DNS and click Nameservers change (take screenshot of old name servers )
+
+7.Enter your own name servers -> copy paste the nameservers of Cloudfare  here ->Save  (Wait 1 hr ).
+
+8.Follow the Quick guide and click options visely 
+Always https - yes
+Auto minfy - html,javascript,css and Save all.
+
+9.ALso confim the IP address is correct in CloudFlare under content section(DNS management tag).
+
+10.After 10 miniutes , Frontend worked well (but backend is not working )
+
+
+BASICALLY ERROR is : 
+Frontend is working fine with SSL , but backend is not working , so we have used the nginx server for redirecting the request so that backend also work with SSL security.
+
+We are desinging the .conf file with required code , That is when we make request to api.codewithdurgesh.com then it redirects to localhost:8080 (which is actual backend of EC2 instance ) and also SSL is ensured. 
+
+_________________________________________
+
+Working.
+
+NOW we are simplifying the working of loading backend with https also we are doing mapping .
+
+--We will make request " api.codewithdurgesh.com " to the Nginx server and then nginx server will redirect to http://codewithdurgesh.com
+
+
+--Now we need to make file using the name under the path given below and paste the text there.
+
+path :   /etc/nginx/conf.d/
+name:  api.codewithdurgesh.com.conf
+
+code:::
+_______________
+
+server {
+   listen 80;
+   server_name api.codewithdurgesh.com;
+
+   location / {
+   proxy_pass "http://localhost:8080";
+   proxy_set_header Host api.codewithdurgesh.com;
+
+   }
+}
+_______________
+
+Basically the request come to nginx at 80 port and redirect to localhost:8080
+
+
+
+11 . 
+Now login to GitBash using the SSH link of EC2 instance. paste the link and login with sudu su
+
+12. Make the file in folder (already 1 file is present , check by ls commnad).
+ubuntu : cd/etc/nginx/conf.d
+
+13.Make file with command , and copy paste the content then close it using  :wq!
+
+vim api.codewithdurgesh.com.conf
+
+
+14.Then restart it : systemctl restart nginx ,also check status .
+
+15. Now go to the CLOUDFLARE , CLICK ON DNS ICON .
+Now add the record with name=api and the required same ip address and save it.
+
+16.Wait 20 minutes and make the seperate call to the backend site. https://api.codewithdurgesh.com/user/test
+
+NOW SSL IS ALSO APPLIED ON BACKEND BUT we have used the nginx subdomain for it . 
+
+So we need to again update the Angular - VSCOde helper.ts file with this new url for accessing the backend service.
+
+17. just Again make change to baseUrl 
+let baseUrl='https://api.codewithduresh.com';
+export default baseUrl;
+
+18: build the file using command 
+ng build --prod
+
+19.Now drag and drop this new files under the dist/examfront folder to already uploaded examfront folder under project of Ubuntu EC2 instance using the FileZilla app. 
+Basically Drag - drop new files to overwrite the old files of examfront
+
+20: Now restart the nginx server and check status of both service and nginx server (wait 30 min and try incognito mode )
+
+. Now frontend and backend both are working fine  
+
+
+__________________________________________________________________________________________________________
+
+                DONE WITH DEPLOYMENT.
+__________________________________________________________________________________________________________
